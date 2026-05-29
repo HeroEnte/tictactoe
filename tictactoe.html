@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tic Tac Toe ♥</title>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -37,7 +38,7 @@
 
     .love-note { font-size: 0.9rem; color: #a8dadc; font-style: italic; }
 
-    input[type="password"], input[type="text"] {
+    input[type="text"] {
       padding: 0.65rem 1.2rem;
       font-size: 1rem;
       border: 2px solid #0f3460;
@@ -64,12 +65,12 @@
       width: 250px;
     }
     .btn:hover:not(:disabled) { background: #e94560; color: #fff; }
-    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn:disabled { opacity: 0.45; cursor: default; }
     .btn.alt { border-color: #a8dadc; color: #a8dadc; }
-    .btn.alt:hover { background: #a8dadc; color: #1a1a2e; }
+    .btn.alt:hover:not(:disabled) { background: #a8dadc; color: #1a1a2e; }
 
-    .error { font-size: 0.88rem; color: #e94560; min-height: 1.2em; }
-    .info { font-size: 0.88rem; color: #a8dadc; text-align: center; line-height: 1.5; }
+    .error { font-size: 0.88rem; color: #e94560; min-height: 1.2em; text-align: center; }
+    .info { font-size: 0.88rem; color: #a8dadc; text-align: center; line-height: 1.6; }
 
     .divider {
       width: 100%;
@@ -86,17 +87,15 @@
       background: #0f3460;
     }
 
-    /* LOBBY: waiting panel */
     .code-box {
       background: #0f3460;
-      padding: 0.8rem 1.5rem;
+      padding: 0.75rem 1.5rem;
       border-radius: 10px;
-      font-size: 1.5rem;
-      letter-spacing: 4px;
+      font-size: 2rem;
+      letter-spacing: 8px;
       font-weight: bold;
       color: #e94560;
       text-align: center;
-      word-break: break-all;
       width: 250px;
     }
 
@@ -111,7 +110,6 @@
       padding: 0.5rem 0.7rem;
       text-align: left;
       width: auto;
-      cursor: text;
     }
     .link-row button {
       padding: 0.5rem 0.9rem;
@@ -146,7 +144,7 @@
       40% { opacity: 1; transform: scale(1); }
     }
 
-    /* GAME */
+    /* ── GAME ── */
     #gameScreen { gap: 0.7rem; }
 
     .game-top {
@@ -156,11 +154,7 @@
       gap: 0.2rem;
     }
 
-    .role-badge {
-      font-size: 0.85rem;
-      color: #aaa;
-    }
-    .role-badge b { color: #e94560; }
+    .role-badge { font-size: 0.85rem; color: #aaa; }
 
     #scores {
       display: flex;
@@ -168,14 +162,12 @@
       font-size: 0.95rem;
       color: #aaa;
     }
-    #scores b { font-weight: bold; }
-    .sx { color: #e94560; }
-    .so { color: #a8dadc; }
+    .sx { color: #e94560; font-weight: bold; }
+    .so { color: #a8dadc; font-weight: bold; }
 
     #gameStatus {
       font-size: 1.1rem;
       min-height: 1.5em;
-      color: #a8dadc;
       text-align: center;
     }
 
@@ -203,63 +195,47 @@
     .cell.o { color: #a8dadc; }
     .cell.win { background: #0f3460; box-shadow: 0 0 18px rgba(233,69,96,0.55); }
 
-    #playAgainBtn { width: 250px; }
-
     .love-footer {
       font-size: 0.82rem;
       color: #a8dadc;
       font-style: italic;
       opacity: 0.55;
-      margin-top: 0.4rem;
+      margin-top: 0.3rem;
     }
   </style>
 </head>
 <body>
 
-  <!-- ── LOGIN ── -->
-  <div id="loginScreen" class="screen active">
+  <!-- ── LOBBY ── -->
+  <div id="lobbyScreen" class="screen active">
     <div class="card">
       <h1>TIC TAC TOE</h1>
       <p class="love-note">Ich liebe dich, Alina :)</p>
-      <input type="password" id="pwInput" placeholder="Enter password" autocomplete="off" />
-      <button class="btn" onclick="tryLogin()">Enter</button>
-      <div class="error" id="loginError"></div>
-    </div>
-  </div>
 
-  <!-- ── LOBBY ── -->
-  <div id="lobbyScreen" class="screen">
-    <div class="card">
-      <h1>TIC TAC TOE</h1>
-
-      <!-- Choice -->
-      <div id="choicePanel">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:0.9rem;">
-          <p class="info">Start a new game and share the link,<br>or join your partner's game.</p>
-          <button class="btn" onclick="createGame()">Create Game</button>
-          <div class="divider">or</div>
-          <input type="text" id="codeInput" placeholder="Enter room code" autocomplete="off" />
-          <button class="btn alt" onclick="joinFromInput()">Join Game</button>
-          <div class="error" id="joinError"></div>
-        </div>
+      <div id="choicePanel" style="display:flex;flex-direction:column;align-items:center;gap:0.9rem;width:100%;">
+        <p class="info">Start a game and share the code,<br>or join your partner's game.</p>
+        <button class="btn" onclick="createGame()">Create Game</button>
+        <div class="divider">or</div>
+        <input type="text" id="codeInput" placeholder="Enter room code" maxlength="6"
+               oninput="this.value=this.value.toUpperCase()" autocomplete="off" />
+        <button class="btn alt" onclick="joinFromInput()">Join Game</button>
+        <div class="error" id="joinError"></div>
       </div>
 
-      <!-- Waiting for partner (after Create) -->
       <div id="waitingPanel" style="display:none;flex-direction:column;align-items:center;gap:0.9rem;">
-        <p class="info">Share this link with your partner:</p>
+        <p class="info">Share this code with your partner:</p>
+        <div class="code-box" id="codeDisplay"></div>
+        <p class="info" style="font-size:0.78rem;">or share this link:</p>
         <div class="link-row">
           <input type="text" id="shareLinkInput" readonly />
           <button onclick="copyLink(this)">Copy</button>
         </div>
-        <p class="info" style="font-size:0.8rem;">or share this code:</p>
-        <div class="code-box" id="codeDisplay"></div>
         <div class="dots">
           <div class="dot"></div><div class="dot"></div><div class="dot"></div>
           <span>Waiting for partner…</span>
         </div>
       </div>
 
-      <!-- Connecting (after Join) -->
       <div id="connectingPanel" style="display:none;flex-direction:column;align-items:center;gap:0.9rem;">
         <div class="dots">
           <div class="dot"></div><div class="dot"></div><div class="dot"></div>
@@ -276,9 +252,9 @@
       <p class="role-badge">You are: <b id="roleBadge"></b></p>
     </div>
     <div id="scores">
-      <div>X: <b class="sx" id="scoreX">0</b></div>
-      <div>Draws: <b id="scoreD">0</b></div>
-      <div>O: <b class="so" id="scoreO">0</b></div>
+      <div>X: <span class="sx" id="scoreX">0</span></div>
+      <div>Draws: <span id="scoreD">0</span></div>
+      <div>O: <span class="so" id="scoreO">0</span></div>
     </div>
     <div id="gameStatus"></div>
     <div id="board">
@@ -286,130 +262,37 @@
       <div class="cell" data-i="3"></div><div class="cell" data-i="4"></div><div class="cell" data-i="5"></div>
       <div class="cell" data-i="6"></div><div class="cell" data-i="7"></div><div class="cell" data-i="8"></div>
     </div>
-    <button class="btn" id="playAgainBtn" onclick="voteRestart()" style="display:none;">Play Again</button>
+    <button class="btn" id="playAgainBtn" onclick="voteRestart()"
+            style="display:none;margin-top:1rem;width:250px;">Play Again</button>
     <p class="love-footer">Ich liebe dich, Alina :)</p>
   </div>
 
   <script>
-    // ── UTILS ──────────────────────────────────────
-    function show(id) {
-      ['loginScreen','lobbyScreen','gameScreen'].forEach(s =>
-        document.getElementById(s).classList.toggle('active', s === id)
-      );
-    }
-
-    // ── LOGIN ──────────────────────────────────────
-    document.getElementById('pwInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter') tryLogin();
+    // ── FIREBASE ──────────────────────────────────
+    firebase.initializeApp({
+      apiKey: "AIzaSyDDGlS6BqXh9jKJFF7gCjZk0Oz_TY8YQ-0",
+      authDomain: "tictactoe-27e1f.firebaseapp.com",
+      databaseURL: "https://tictactoe-27e1f-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "tictactoe-27e1f",
+      storageBucket: "tictactoe-27e1f.firebasestorage.app",
+      messagingSenderId: "346491644369",
+      appId: "1:346491644369:web:0ee6a60f03f642879558f0"
     });
+    const db = firebase.database();
 
-    function tryLogin() {
-      if (document.getElementById('pwInput').value === 'Alina') {
-        show('lobbyScreen');
-        const code = new URLSearchParams(location.search).get('join');
-        if (code) {
-          document.getElementById('codeInput').value = code;
-          joinGame(code);
-        }
-      } else {
-        document.getElementById('loginError').textContent = 'Wrong password. Try again!';
-        document.getElementById('pwInput').value = '';
-        document.getElementById('pwInput').focus();
-      }
-    }
-
-    // ── NETWORKING ─────────────────────────────────
-    let peer = null, conn = null, myRole = null;
-
-    function createGame() {
-      document.getElementById('choicePanel').style.display = 'none';
-      document.getElementById('waitingPanel').style.display = 'flex';
-
-      peer = new Peer();
-      peer.on('open', id => {
-        document.getElementById('codeDisplay').textContent = id;
-        const link = location.origin + location.pathname + '?join=' + id;
-        document.getElementById('shareLinkInput').value = link;
-      });
-      peer.on('connection', c => {
-        conn = c;
-        myRole = 'X';
-        wireConn();
-      });
-      peer.on('error', () => alert('Connection error. Please refresh and try again.'));
-    }
-
-    function joinFromInput() {
-      const code = document.getElementById('codeInput').value.trim();
-      if (!code) { document.getElementById('joinError').textContent = 'Enter a room code.'; return; }
-      joinGame(code);
-    }
-
-    function joinGame(code) {
-      document.getElementById('choicePanel').style.display = 'none';
-      document.getElementById('connectingPanel').style.display = 'flex';
-
-      peer = new Peer();
-      peer.on('open', () => {
-        conn = peer.connect(code);
-        myRole = 'O';
-        wireConn();
-      });
-      peer.on('error', () => {
-        document.getElementById('choicePanel').style.display = 'flex';
-        document.getElementById('connectingPanel').style.display = 'none';
-        document.getElementById('joinError').textContent = 'Could not connect. Check the code and try again.';
-      });
-    }
-
-    function wireConn() {
-      conn.on('open', () => {
-        show('gameScreen');
-        const badge = document.getElementById('roleBadge');
-        badge.textContent = myRole;
-        badge.style.color = myRole === 'X' ? '#e94560' : '#a8dadc';
-        initBoard();
-      });
-      conn.on('data', onData);
-      conn.on('close', () => {
-        setStatus('Partner disconnected.', '#aaa');
-        document.getElementById('playAgainBtn').style.display = 'none';
-        over = true;
-      });
-    }
-
-    function send(obj) { if (conn && conn.open) conn.send(obj); }
-
-    function copyLink(btn) {
-      const val = document.getElementById('shareLinkInput').value;
-      navigator.clipboard.writeText(val).catch(() => {
-        const tmp = document.createElement('textarea');
-        tmp.value = val;
-        document.body.appendChild(tmp);
-        tmp.select();
-        document.execCommand('copy');
-        document.body.removeChild(tmp);
-      });
-      btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = 'Copy', 2000);
-    }
-
-    // ── GAME ───────────────────────────────────────
+    // ── STATE ─────────────────────────────────────
     const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    let board, turn, over, votes;
-    let scores = { X:0, O:0, D:0 };
     const cells = document.querySelectorAll('.cell');
+    let myRole    = null;   // 'X' | 'O'
+    let roomRef   = null;
+    let inGame    = false;
+    let lastResult = null;  // track to avoid double-counting scores
+    const scores  = { X: 0, O: 0, D: 0 };
 
-    function initBoard() {
-      board = Array(9).fill('');
-      turn = 'X';
-      over = false;
-      votes = { X:false, O:false };
-      cells.forEach(c => { c.textContent = ''; c.className = 'cell'; });
-      document.getElementById('playAgainBtn').textContent = 'Play Again';
-      document.getElementById('playAgainBtn').disabled = false;
-      document.getElementById('playAgainBtn').style.display = 'none';
-      updateStatus();
+    // ── HELPERS ───────────────────────────────────
+    function show(id) {
+      ['lobbyScreen','gameScreen'].forEach(s =>
+        document.getElementById(s).classList.toggle('active', s === id));
     }
 
     function setStatus(msg, color) {
@@ -418,72 +301,239 @@
       el.style.color = color || '#a8dadc';
     }
 
-    function updateStatus() {
-      if (turn === myRole) setStatus('Your turn!', myRole === 'X' ? '#e94560' : '#a8dadc');
-      else setStatus("Partner's turn…", '#aaa');
+    function blockBoard(on) {
+      cells.forEach(c => c.classList.toggle('blocked', on));
     }
 
-    cells.forEach(cell => {
-      cell.addEventListener('click', () => {
-        const i = +cell.dataset.i;
-        if (over || board[i] || turn !== myRole) return;
-        placeMove(i, myRole);
-        send({ type: 'move', i });
+    function generateCode() {
+      // Unambiguous characters (no I, O, 0, 1)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      return code;
+    }
+
+    function copyLink(btn) {
+      const val = document.getElementById('shareLinkInput').value;
+      navigator.clipboard.writeText(val).catch(() => {
+        const t = document.createElement('textarea');
+        t.value = val; document.body.appendChild(t); t.select();
+        document.execCommand('copy'); document.body.removeChild(t);
       });
-    });
-
-    function placeMove(i, player) {
-      board[i] = player;
-      cells[i].textContent = player;
-      cells[i].classList.add('taken', player.toLowerCase());
-
-      const win = checkWin();
-      if (win) {
-        win.forEach(j => cells[j].classList.add('win'));
-        if (player === myRole) setStatus('You win! 🎉', '#e94560');
-        else setStatus('Partner wins!', '#aaa');
-        scores[player]++;
-        document.getElementById('score' + player).textContent = scores[player];
-        over = true;
-        document.getElementById('playAgainBtn').style.display = 'block';
-      } else if (board.every(Boolean)) {
-        setStatus("It's a draw!", '#a8dadc');
-        scores.D++;
-        document.getElementById('scoreD').textContent = scores.D;
-        over = true;
-        document.getElementById('playAgainBtn').style.display = 'block';
-      } else {
-        turn = player === 'X' ? 'O' : 'X';
-        updateStatus();
-      }
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
     }
 
-    function checkWin() {
+    function checkWin(board) {
       for (const [a,b,c] of WINS)
         if (board[a] && board[a] === board[b] && board[b] === board[c]) return [a,b,c];
       return null;
     }
 
-    function voteRestart() {
-      votes[myRole] = true;
-      document.getElementById('playAgainBtn').textContent = 'Waiting for partner…';
-      document.getElementById('playAgainBtn').disabled = true;
-      send({ type: 'restart' });
-      tryRestart();
+    // ── LOBBY ─────────────────────────────────────
+    async function createGame() {
+      const code = generateCode();
+      roomRef = db.ref('rooms/' + code);
+
+      await roomRef.set({
+        c0:'',c1:'',c2:'',c3:'',c4:'',c5:'',c6:'',c7:'',c8:'',
+        turn: 'X',
+        xOnline: true,
+        oOnline: false,
+        result: '',
+        restartX: false,
+        restartO: false
+      });
+
+      myRole = 'X';
+      roomRef.child('xOnline').onDisconnect().set(false);
+
+      document.getElementById('choicePanel').style.display = 'none';
+      document.getElementById('waitingPanel').style.display = 'flex';
+      document.getElementById('codeDisplay').textContent = code;
+      document.getElementById('shareLinkInput').value =
+        location.origin + location.pathname + '?join=' + code;
+
+      roomRef.on('value', onRoomUpdate);
+
+      // Re-announce presence on reconnect
+      db.ref('.info/connected').on('value', snap => {
+        if (snap.val() && roomRef && myRole === 'X') {
+          roomRef.child('xOnline').set(true);
+          roomRef.child('xOnline').onDisconnect().set(false);
+        }
+      });
     }
 
-    function tryRestart() {
-      if (votes.X && votes.O) initBoard();
-    }
-
-    function onData(data) {
-      if (data.type === 'move') {
-        placeMove(data.i, myRole === 'X' ? 'O' : 'X');
-      } else if (data.type === 'restart') {
-        const other = myRole === 'X' ? 'O' : 'X';
-        votes[other] = true;
-        tryRestart();
+    function joinFromInput() {
+      const code = document.getElementById('codeInput').value.trim().toUpperCase();
+      if (code.length !== 6) {
+        document.getElementById('joinError').textContent = 'Code must be 6 characters.';
+        return;
       }
+      joinGame(code);
+    }
+
+    async function joinGame(code) {
+      code = code.toUpperCase();
+      document.getElementById('choicePanel').style.display = 'none';
+      document.getElementById('connectingPanel').style.display = 'flex';
+
+      roomRef = db.ref('rooms/' + code);
+      let snap;
+      try { snap = await roomRef.once('value'); }
+      catch {
+        resetLobby('Connection failed. Check your internet.');
+        return;
+      }
+
+      if (!snap.exists()) { resetLobby('Room not found. Check the code.'); return; }
+
+      const data = snap.val();
+      if (data.oOnline) { resetLobby('Room is already full.'); return; }
+
+      myRole = 'O';
+      await roomRef.update({ oOnline: true });
+      roomRef.child('oOnline').onDisconnect().set(false);
+
+      db.ref('.info/connected').on('value', snap => {
+        if (snap.val() && roomRef && myRole === 'O') {
+          roomRef.child('oOnline').set(true);
+          roomRef.child('oOnline').onDisconnect().set(false);
+        }
+      });
+
+      enterGame();
+      roomRef.on('value', onRoomUpdate);
+    }
+
+    function resetLobby(errMsg) {
+      document.getElementById('connectingPanel').style.display = 'none';
+      document.getElementById('choicePanel').style.display = 'flex';
+      document.getElementById('joinError').textContent = errMsg;
+    }
+
+    function enterGame() {
+      inGame = true;
+      const badge = document.getElementById('roleBadge');
+      badge.textContent = myRole;
+      badge.style.color = myRole === 'X' ? '#e94560' : '#a8dadc';
+      show('gameScreen');
+    }
+
+    // ── ROOM LISTENER ─────────────────────────────
+    function onRoomUpdate(snap) {
+      const data = snap.val();
+      if (!data) return;
+
+      // X waits here until O joins
+      if (myRole === 'X' && data.oOnline && !inGame) enterGame();
+      if (!inGame) return;
+
+      const board = [data.c0,data.c1,data.c2,data.c3,data.c4,data.c5,data.c6,data.c7,data.c8];
+      const win   = checkWin(board);
+
+      // Render cells
+      cells.forEach((cell, i) => {
+        const v = board[i];
+        cell.className = 'cell' + (v ? ' taken ' + v.toLowerCase() : '');
+        cell.textContent = v;
+        if (win && win.includes(i)) cell.classList.add('win');
+      });
+
+      // Partner disconnected
+      const partnerOnline = myRole === 'X' ? data.oOnline : data.xOnline;
+      if (!partnerOnline) {
+        setStatus('Partner disconnected.', '#aaa');
+        blockBoard(true);
+        document.getElementById('playAgainBtn').style.display = 'none';
+        return;
+      }
+
+      // Score update (fires once per result change)
+      if (data.result && data.result !== lastResult) {
+        lastResult = data.result;
+        if (data.result === 'draw') {
+          scores.D++;
+          document.getElementById('scoreD').textContent = scores.D;
+        } else {
+          scores[data.result]++;
+          document.getElementById('score' + data.result).textContent = scores[data.result];
+        }
+      }
+      if (!data.result && lastResult) lastResult = null;
+
+      // Game over state
+      if (data.result) {
+        const btn = document.getElementById('playAgainBtn');
+        btn.style.display = 'block';
+
+        if (data.result === 'draw')      setStatus("It's a draw!", '#a8dadc');
+        else if (data.result === myRole) setStatus('You win! 🎉', '#e94560');
+        else                             setStatus('Partner wins!', '#aaa');
+
+        if (data.restartX && data.restartO) {
+          // Both agreed — X does the reset write
+          if (myRole === 'X') {
+            roomRef.update({
+              c0:'',c1:'',c2:'',c3:'',c4:'',c5:'',c6:'',c7:'',c8:'',
+              turn:'X', result:'', restartX:false, restartO:false
+            });
+          }
+          btn.textContent = 'Play Again';
+          btn.disabled = false;
+        } else {
+          const myVote = myRole === 'X' ? data.restartX : data.restartO;
+          btn.textContent = myVote ? 'Waiting for partner…' : 'Play Again';
+          btn.disabled    = !!myVote;
+        }
+
+        blockBoard(true);
+        return;
+      }
+
+      // Active game
+      document.getElementById('playAgainBtn').style.display = 'none';
+      if (data.turn === myRole) {
+        setStatus('Your turn!', myRole === 'X' ? '#e94560' : '#a8dadc');
+        blockBoard(false);
+      } else {
+        setStatus("Partner's turn…", '#aaa');
+        blockBoard(true);
+      }
+    }
+
+    // ── MOVE ──────────────────────────────────────
+    cells.forEach(cell => {
+      cell.addEventListener('click', () => {
+        if (!inGame || cell.classList.contains('taken') || cell.classList.contains('blocked')) return;
+        const i = +cell.dataset.i;
+
+        // Optimistically block board to prevent double-clicks before Firebase confirms
+        blockBoard(true);
+
+        const newBoard = Array.from(cells).map((c, j) => j === i ? myRole : (c.textContent || ''));
+        const update   = { [`c${i}`]: myRole };
+        const win      = checkWin(newBoard);
+
+        if      (win)                  update.result = myRole;
+        else if (newBoard.every(Boolean)) update.result = 'draw';
+        else    update.turn = myRole === 'X' ? 'O' : 'X';
+
+        roomRef.update(update);
+      });
+    });
+
+    // ── RESTART ───────────────────────────────────
+    function voteRestart() {
+      roomRef.update({ [myRole === 'X' ? 'restartX' : 'restartO']: true });
+    }
+
+    // ── AUTO-JOIN FROM URL ────────────────────────
+    const joinCode = new URLSearchParams(location.search).get('join');
+    if (joinCode) {
+      document.getElementById('codeInput').value = joinCode.toUpperCase();
+      joinGame(joinCode);
     }
   </script>
 </body>
