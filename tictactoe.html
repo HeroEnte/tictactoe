@@ -427,6 +427,7 @@
     const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const cells = document.querySelectorAll('.cell');
     let myRole = null, roomRef = null, inGame = false, lastResult = null;
+    let localBoard = Array(9).fill(''); // always mirrors Firebase — used by click handler
     const scores = { X:0, O:0, D:0 };
 
     function show(id) {
@@ -454,8 +455,8 @@
       setTimeout(() => btn.textContent = 'Copy', 2000);
     }
     function checkWin(b) {
-      for (const [a,x,c] of WINS)
-        if (b[a] && b[a]===b[x] && b[x]===b[c]) return [a,x,c];
+      for (const [a,m,c] of WINS)
+        if (b[a] && b[a]===b[m] && b[m]===b[c]) return [a,m,c];
       return null;
     }
 
@@ -531,18 +532,17 @@
       if (myRole==='X' && data.oOnline && !inGame) enterGame();
       if (!inGame) return;
 
-      const board = [data.c0,data.c1,data.c2,data.c3,data.c4,data.c5,data.c6,data.c7,data.c8];
-      const win   = checkWin(board);
+      // Keep localBoard in sync — click handler reads this, never the DOM
+      localBoard = [data.c0,data.c1,data.c2,data.c3,data.c4,data.c5,data.c6,data.c7,data.c8];
+      const win = checkWin(localBoard);
+
       cells.forEach((cell, i) => {
-        const v = board[i];
+        const v = localBoard[i];
         cell.className = 'cell' + (v ? ' taken ' + v.toLowerCase() : '');
         cell.textContent = v;
         if (win && win.includes(i)) cell.classList.add('win');
       });
 
-      if (!(myRole==='X' ? data.xOnline : data.oOnline) && !(myRole==='X' ? data.oOnline : data.xOnline)) {
-        // edge case: both offline somehow
-      }
       const partnerOnline = myRole==='X' ? data.oOnline : data.xOnline;
       if (!partnerOnline) {
         setStatus('Partner disconnected.', 'rgba(235,235,245,0.4)');
@@ -551,19 +551,24 @@
         return;
       }
 
-      if (data.result && data.result !== lastResult) {
-        lastResult = data.result;
-        if (data.result==='draw') { scores.D++; document.getElementById('scoreD').textContent = scores.D; }
-        else { scores[data.result]++; document.getElementById('score'+data.result).textContent = scores[data.result]; }
-      }
-      if (!data.result && lastResult) lastResult = null;
+      // Determine the effective result: use Firebase value, but also catch a
+      // full board with no winner in case the result write hasn't arrived yet.
+      const effectiveResult = data.result ||
+        (localBoard.every(Boolean) && !win ? 'draw' : '');
 
-      if (data.result) {
+      if (effectiveResult && effectiveResult !== lastResult) {
+        lastResult = effectiveResult;
+        if (effectiveResult === 'draw') { scores.D++; document.getElementById('scoreD').textContent = scores.D; }
+        else { scores[effectiveResult]++; document.getElementById('score'+effectiveResult).textContent = scores[effectiveResult]; }
+      }
+      if (!effectiveResult && lastResult) lastResult = null;
+
+      if (effectiveResult) {
         const btn = document.getElementById('playAgainBtn');
         btn.style.display = 'block';
-        if (data.result==='draw')           setStatus("It's a draw.", 'rgba(235,235,245,0.55)');
-        else if (data.result===myRole)      setStatus('You win.', myRole==='X' ? '#0a84ff' : '#ff453a');
-        else                                setStatus('Partner wins.', 'rgba(235,235,245,0.4)');
+        if (effectiveResult==='draw')        setStatus("It's a draw.", 'rgba(235,235,245,0.55)');
+        else if (effectiveResult===myRole)   setStatus('You win.', myRole==='X' ? '#0a84ff' : '#ff453a');
+        else                                 setStatus('Partner wins.', 'rgba(235,235,245,0.4)');
 
         if (data.restartX && data.restartO) {
           if (myRole==='X') roomRef.update({
@@ -595,11 +600,13 @@
         if (!inGame || cell.classList.contains('taken') || cell.classList.contains('blocked')) return;
         const i = +cell.dataset.i;
         blockBoard(true);
-        const newBoard = Array.from(cells).map((c,j) => j===i ? myRole : (c.textContent||''));
-        const update   = { [`c${i}`]: myRole };
-        const win      = checkWin(newBoard);
-        if      (win)                     update.result = myRole;
-        else if (newBoard.every(Boolean)) update.result = 'draw';
+        // Use localBoard (synced from Firebase) — never read stale DOM text
+        const newBoard = [...localBoard];
+        newBoard[i] = myRole;
+        const update = { [`c${i}`]: myRole };
+        const w = checkWin(newBoard);
+        if      (w)                        update.result = myRole;
+        else if (newBoard.every(Boolean))  update.result = 'draw';
         else    update.turn = myRole==='X' ? 'O' : 'X';
         roomRef.update(update);
       });
