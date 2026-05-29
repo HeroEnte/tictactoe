@@ -3,16 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tic Tac Toe ♥</title>
+  <title>Tic Tac Toe</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <style>
+    :root {
+      --bg:         #000;
+      --s1:         rgba(28, 28, 30, 0.8);
+      --s2:         rgba(44, 44, 46, 0.9);
+      --s3:         rgba(58, 58, 60, 0.9);
+      --border:     rgba(255, 255, 255, 0.08);
+      --accent:     #0a84ff;
+      --x:          #0a84ff;
+      --o:          #ff453a;
+      --t1:         rgba(255, 255, 255, 0.92);
+      --t2:         rgba(235, 235, 245, 0.55);
+      --t3:         rgba(235, 235, 245, 0.25);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #1a1a2e;
-      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 100% 50% at 50% -10%, rgba(10,132,255,0.13) 0%, transparent 70%),
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.028) 1px, transparent 0);
+      background-size: auto, 28px 28px;
+      color: var(--t1);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -20,188 +38,302 @@
       min-height: 100vh;
     }
 
-    .screen { display: none; flex-direction: column; align-items: center; }
+    /* ── SCREENS ── */
+    .screen { display: none; flex-direction: column; align-items: center; animation: fadeUp 0.4s ease; }
     .screen.active { display: flex; }
 
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── GLASS CARD ── */
     .card {
-      background: #16213e;
-      padding: 2.5rem 3rem;
-      border-radius: 18px;
-      box-shadow: 0 0 40px rgba(233,69,96,0.2);
+      background: var(--s1);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      padding: 2.4rem 2.6rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1.1rem;
+      gap: 1rem;
+      min-width: 310px;
     }
 
-    h1 { font-size: 2rem; color: #e94560; letter-spacing: 2px; }
+    /* ── TITLE ── */
+    .title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--t1);
+      text-transform: uppercase;
+    }
+    .subtitle {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      color: var(--t3);
+      text-transform: uppercase;
+      margin-top: -0.5rem;
+    }
 
-    .love-note { font-size: 0.9rem; color: #a8dadc; font-style: italic; }
-
+    /* ── INPUT ── */
     input[type="text"] {
-      padding: 0.65rem 1.2rem;
+      padding: 0.72rem 1.1rem;
       font-size: 1rem;
-      border: 2px solid #0f3460;
-      background: #1a1a2e;
-      color: #eee;
-      border-radius: 8px;
-      width: 250px;
+      font-family: inherit;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--t1);
+      border-radius: 13px;
+      width: 100%;
       text-align: center;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.06em;
     }
-    input:focus { border-color: #e94560; }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(10,132,255,0.18);
+    }
 
+    /* ── BUTTONS ── */
     .btn {
-      padding: 0.6rem 2rem;
-      font-size: 1rem;
-      border: 2px solid #e94560;
-      background: transparent;
-      color: #e94560;
-      border-radius: 8px;
+      padding: 0.78rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
       cursor: pointer;
-      letter-spacing: 1px;
-      transition: background 0.15s, color 0.15s;
-      width: 250px;
+      width: 100%;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s, transform 0.1s;
     }
-    .btn:hover:not(:disabled) { background: #e94560; color: #fff; }
-    .btn:disabled { opacity: 0.45; cursor: default; }
-    .btn.alt { border-color: #a8dadc; color: #a8dadc; }
-    .btn.alt:hover:not(:disabled) { background: #a8dadc; color: #1a1a2e; }
+    .btn:hover:not(:disabled) { opacity: 0.82; }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.32; cursor: default; }
 
-    .error { font-size: 0.88rem; color: #e94560; min-height: 1.2em; text-align: center; }
-    .info { font-size: 0.88rem; color: #a8dadc; text-align: center; line-height: 1.6; }
+    .btn-ghost {
+      padding: 0.78rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--s2);
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-ghost:hover { background: var(--s3); }
+    .btn-ghost:active { transform: scale(0.97); }
 
+    /* ── DIVIDER ── */
     .divider {
       width: 100%;
       display: flex;
       align-items: center;
-      gap: 0.8rem;
-      color: #555;
-      font-size: 0.85rem;
+      gap: 0.75rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: var(--t3);
     }
     .divider::before, .divider::after {
       content: '';
       flex: 1;
       height: 1px;
-      background: #0f3460;
+      background: var(--border);
     }
 
+    /* ── CODE BOX ── */
     .code-box {
-      background: #0f3460;
-      padding: 0.75rem 1.5rem;
-      border-radius: 10px;
-      font-size: 2rem;
-      letter-spacing: 8px;
-      font-weight: bold;
-      color: #e94560;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: 0.5em;
+      padding-left: calc(0.85rem + 0.5em);
+      color: var(--accent);
       text-align: center;
-      width: 250px;
+      width: 100%;
     }
 
-    .link-row {
-      display: flex;
-      gap: 0.5rem;
-      width: 250px;
-    }
+    /* ── LINK ROW ── */
+    .link-row { display: flex; gap: 0.4rem; width: 100%; }
     .link-row input {
-      flex: 1;
-      font-size: 0.72rem;
-      padding: 0.5rem 0.7rem;
-      text-align: left;
-      width: auto;
+      flex: 1; font-size: 0.7rem; letter-spacing: 0;
+      text-align: left; padding: 0.6rem 0.8rem;
     }
-    .link-row button {
-      padding: 0.5rem 0.9rem;
-      border: 2px solid #a8dadc;
-      background: transparent;
-      color: #a8dadc;
-      border-radius: 8px;
+    .copy-btn {
+      padding: 0.6rem 0.9rem;
+      font-size: 0.78rem;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--s2);
+      color: var(--t2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       cursor: pointer;
-      font-size: 0.8rem;
-      transition: background 0.15s, color 0.15s;
       white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
     }
-    .link-row button:hover { background: #a8dadc; color: #1a1a2e; }
+    .copy-btn:hover { background: var(--s3); color: var(--t1); }
 
+    /* ── DOTS ── */
     .dots {
       display: flex;
       align-items: center;
-      gap: 6px;
-      color: #a8dadc;
-      font-size: 0.9rem;
+      gap: 5px;
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--t2);
+      letter-spacing: 0.02em;
     }
     .dot {
-      width: 7px; height: 7px;
-      background: #a8dadc;
+      width: 5px; height: 5px;
+      background: var(--accent);
       border-radius: 50%;
-      animation: blink 1.2s ease-in-out infinite;
+      animation: pulse 1.4s ease-in-out infinite;
     }
     .dot:nth-child(2) { animation-delay: 0.2s; }
     .dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes blink {
-      0%,80%,100% { opacity: 0.2; transform: scale(0.8); }
-      40% { opacity: 1; transform: scale(1); }
+    @keyframes pulse {
+      0%,80%,100% { opacity: 0.2; transform: scale(0.6); }
+      40%          { opacity: 1;   transform: scale(1);   }
     }
 
-    /* ── GAME ── */
-    #gameScreen { gap: 0.7rem; }
+    .error { font-size: 0.8rem; color: var(--o); min-height: 1.2em; text-align: center; }
+    .info  { font-size: 0.8rem; color: var(--t2); text-align: center; line-height: 1.7; }
 
-    .game-top {
+    /* ── GAME SCREEN ── */
+    #gameScreen { gap: 0; }
+
+    .game-header {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.2rem;
+      gap: 0.5rem;
+      margin-bottom: 1.2rem;
     }
 
-    .role-badge { font-size: 0.85rem; color: #aaa; }
-
-    #scores {
-      display: flex;
-      gap: 2rem;
-      font-size: 0.95rem;
-      color: #aaa;
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--s1);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.28rem 0.9rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--t2);
     }
-    .sx { color: #e94560; font-weight: bold; }
-    .so { color: #a8dadc; font-weight: bold; }
+    .role-pill b { font-weight: 700; }
 
+    /* ── SCORES ── */
+    .scores-row { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+    .score-chip {
+      background: var(--s1);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.3rem 1rem;
+      text-align: center;
+      min-width: 60px;
+    }
+    .score-chip .lbl {
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--t3);
+      display: block;
+    }
+    .score-chip .val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--t1);
+      display: block;
+      line-height: 1.25;
+    }
+    .score-chip.xc .val { color: var(--x); }
+    .score-chip.oc .val { color: var(--o); }
+
+    /* ── STATUS ── */
     #gameStatus {
-      font-size: 1.1rem;
-      min-height: 1.5em;
+      font-size: 0.88rem;
+      font-weight: 500;
+      min-height: 1.4em;
+      margin-bottom: 1.1rem;
+      color: var(--t2);
+      letter-spacing: 0.03em;
       text-align: center;
     }
 
+    /* ── BOARD ── */
     #board {
       display: grid;
-      grid-template-columns: repeat(3, 110px);
-      grid-template-rows: repeat(3, 110px);
-      gap: 10px;
+      grid-template-columns: repeat(3, 106px);
+      grid-template-rows: repeat(3, 106px);
+      gap: 8px;
     }
 
     .cell {
-      background: #16213e;
-      border-radius: 12px;
+      background: var(--s1);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 3rem;
+      font-size: 2.5rem;
+      font-weight: 800;
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.2s, transform 0.12s;
       user-select: none;
     }
-    .cell:hover:not(.taken):not(.blocked) { background: #0f3460; transform: scale(1.05); }
-    .cell.taken, .cell.blocked { cursor: default; }
-    .cell.x { color: #e94560; }
-    .cell.o { color: #a8dadc; }
-    .cell.win { background: #0f3460; box-shadow: 0 0 18px rgba(233,69,96,0.55); }
-
-    .love-footer {
-      font-size: 0.82rem;
-      color: #a8dadc;
-      font-style: italic;
-      opacity: 0.55;
-      margin-top: 0.3rem;
+    .cell:hover:not(.taken):not(.blocked) {
+      background: var(--s2);
+      border-color: rgba(255,255,255,0.14);
+      transform: scale(1.04);
     }
+    .cell:active:not(.taken):not(.blocked) { transform: scale(0.96); }
+    .cell.taken, .cell.blocked { cursor: default; }
+
+    .cell.x {
+      color: var(--x);
+      border-color: rgba(10,132,255,0.22);
+      background: rgba(10,132,255,0.07);
+    }
+    .cell.o {
+      color: var(--o);
+      border-color: rgba(255,69,58,0.22);
+      background: rgba(255,69,58,0.07);
+    }
+    .cell.win.x {
+      border-color: rgba(10,132,255,0.6);
+      background: rgba(10,132,255,0.14);
+      box-shadow: 0 0 24px rgba(10,132,255,0.35), inset 0 0 12px rgba(10,132,255,0.08);
+    }
+    .cell.win.o {
+      border-color: rgba(255,69,58,0.6);
+      background: rgba(255,69,58,0.14);
+      box-shadow: 0 0 24px rgba(255,69,58,0.35), inset 0 0 12px rgba(255,69,58,0.08);
+    }
+
+    /* ── PLAY AGAIN ── */
+    #playAgainBtn { margin-top: 1.1rem; width: 330px; }
   </style>
 </head>
 <body>
@@ -209,37 +341,39 @@
   <!-- ── LOBBY ── -->
   <div id="lobbyScreen" class="screen active">
     <div class="card">
-      <h1>TIC TAC TOE</h1>
-      <p class="love-note">Ich liebe dich, Alina :)</p>
+      <div style="text-align:center;">
+        <div class="title">Tic Tac Toe</div>
+        <div class="subtitle">Two Player</div>
+      </div>
 
-      <div id="choicePanel" style="display:flex;flex-direction:column;align-items:center;gap:0.9rem;width:100%;">
-        <p class="info">Start a game and share the code,<br>or join your partner's game.</p>
-        <button class="btn" onclick="createGame()">Create Game</button>
+      <div id="choicePanel" style="display:flex;flex-direction:column;align-items:stretch;gap:0.75rem;width:100%;">
+        <p class="info">Create a game and share the code,<br>or join your partner's game.</p>
+        <button class="btn" onclick="createGame()">New Game</button>
         <div class="divider">or</div>
-        <input type="text" id="codeInput" placeholder="Enter room code" maxlength="6"
-               oninput="this.value=this.value.toUpperCase()" autocomplete="off" />
-        <button class="btn alt" onclick="joinFromInput()">Join Game</button>
+        <input type="text" id="codeInput" placeholder="Room Code"
+               maxlength="6" oninput="this.value=this.value.toUpperCase()" autocomplete="off" />
+        <button class="btn-ghost" onclick="joinFromInput()">Join Game</button>
         <div class="error" id="joinError"></div>
       </div>
 
-      <div id="waitingPanel" style="display:none;flex-direction:column;align-items:center;gap:0.9rem;">
+      <div id="waitingPanel" style="display:none;flex-direction:column;align-items:stretch;gap:0.75rem;width:100%;">
         <p class="info">Share this code with your partner:</p>
         <div class="code-box" id="codeDisplay"></div>
-        <p class="info" style="font-size:0.78rem;">or share this link:</p>
+        <p class="info" style="font-size:0.7rem;">or share this link</p>
         <div class="link-row">
           <input type="text" id="shareLinkInput" readonly />
-          <button onclick="copyLink(this)">Copy</button>
+          <button class="copy-btn" onclick="copyLink(this)">Copy</button>
         </div>
-        <div class="dots">
+        <div class="dots" style="justify-content:center;margin-top:0.2rem;">
           <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-          <span>Waiting for partner…</span>
+          <span>Waiting for partner</span>
         </div>
       </div>
 
-      <div id="connectingPanel" style="display:none;flex-direction:column;align-items:center;gap:0.9rem;">
+      <div id="connectingPanel" style="display:none;flex-direction:column;align-items:center;gap:0.75rem;">
         <div class="dots">
           <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-          <span>Connecting…</span>
+          <span>Connecting</span>
         </div>
       </div>
     </div>
@@ -247,28 +381,38 @@
 
   <!-- ── GAME ── -->
   <div id="gameScreen" class="screen">
-    <div class="game-top">
-      <h1>TIC TAC TOE</h1>
-      <p class="role-badge">You are: <b id="roleBadge"></b></p>
+    <div class="game-header">
+      <div class="title">Tic Tac Toe</div>
+      <div class="role-pill">Playing as&nbsp;<b id="roleBadge"></b></div>
     </div>
-    <div id="scores">
-      <div>X: <span class="sx" id="scoreX">0</span></div>
-      <div>Draws: <span id="scoreD">0</span></div>
-      <div>O: <span class="so" id="scoreO">0</span></div>
+
+    <div class="scores-row">
+      <div class="score-chip xc">
+        <span class="lbl">X</span>
+        <span class="val" id="scoreX">0</span>
+      </div>
+      <div class="score-chip">
+        <span class="lbl">Draw</span>
+        <span class="val" id="scoreD">0</span>
+      </div>
+      <div class="score-chip oc">
+        <span class="lbl">O</span>
+        <span class="val" id="scoreO">0</span>
+      </div>
     </div>
+
     <div id="gameStatus"></div>
+
     <div id="board">
       <div class="cell" data-i="0"></div><div class="cell" data-i="1"></div><div class="cell" data-i="2"></div>
       <div class="cell" data-i="3"></div><div class="cell" data-i="4"></div><div class="cell" data-i="5"></div>
       <div class="cell" data-i="6"></div><div class="cell" data-i="7"></div><div class="cell" data-i="8"></div>
     </div>
-    <button class="btn" id="playAgainBtn" onclick="voteRestart()"
-            style="display:none;margin-top:1rem;width:250px;">Play Again</button>
-    <p class="love-footer">Ich liebe dich, Alina :)</p>
+
+    <button class="btn" id="playAgainBtn" onclick="voteRestart()" style="display:none;">Play Again</button>
   </div>
 
   <script>
-    // ── FIREBASE ──────────────────────────────────
     firebase.initializeApp({
       apiKey: "AIzaSyDDGlS6BqXh9jKJFF7gCjZk0Oz_TY8YQ-0",
       authDomain: "tictactoe-27e1f.firebaseapp.com",
@@ -280,39 +424,25 @@
     });
     const db = firebase.database();
 
-    // ── STATE ─────────────────────────────────────
     const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     const cells = document.querySelectorAll('.cell');
-    let myRole    = null;   // 'X' | 'O'
-    let roomRef   = null;
-    let inGame    = false;
-    let lastResult = null;  // track to avoid double-counting scores
-    const scores  = { X: 0, O: 0, D: 0 };
+    let myRole = null, roomRef = null, inGame = false, lastResult = null;
+    const scores = { X:0, O:0, D:0 };
 
-    // ── HELPERS ───────────────────────────────────
     function show(id) {
       ['lobbyScreen','gameScreen'].forEach(s =>
         document.getElementById(s).classList.toggle('active', s === id));
     }
-
     function setStatus(msg, color) {
       const el = document.getElementById('gameStatus');
       el.textContent = msg;
-      el.style.color = color || '#a8dadc';
+      el.style.color = color || 'rgba(235,235,245,0.55)';
     }
-
-    function blockBoard(on) {
-      cells.forEach(c => c.classList.toggle('blocked', on));
-    }
-
+    function blockBoard(on) { cells.forEach(c => c.classList.toggle('blocked', on)); }
     function generateCode() {
-      // Unambiguous characters (no I, O, 0, 1)
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let code = '';
-      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-      return code;
+      const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      return Array.from({length:6}, () => c[Math.floor(Math.random()*c.length)]).join('');
     }
-
     function copyLink(btn) {
       const val = document.getElementById('shareLinkInput').value;
       navigator.clipboard.writeText(val).catch(() => {
@@ -323,42 +453,29 @@
       btn.textContent = 'Copied!';
       setTimeout(() => btn.textContent = 'Copy', 2000);
     }
-
-    function checkWin(board) {
-      for (const [a,b,c] of WINS)
-        if (board[a] && board[a] === board[b] && board[b] === board[c]) return [a,b,c];
+    function checkWin(b) {
+      for (const [a,x,c] of WINS)
+        if (b[a] && b[a]===b[x] && b[x]===b[c]) return [a,x,c];
       return null;
     }
 
-    // ── LOBBY ─────────────────────────────────────
     async function createGame() {
       const code = generateCode();
       roomRef = db.ref('rooms/' + code);
-
       await roomRef.set({
         c0:'',c1:'',c2:'',c3:'',c4:'',c5:'',c6:'',c7:'',c8:'',
-        turn: 'X',
-        xOnline: true,
-        oOnline: false,
-        result: '',
-        restartX: false,
-        restartO: false
+        turn:'X', xOnline:true, oOnline:false, result:'', restartX:false, restartO:false
       });
-
       myRole = 'X';
       roomRef.child('xOnline').onDisconnect().set(false);
-
       document.getElementById('choicePanel').style.display = 'none';
       document.getElementById('waitingPanel').style.display = 'flex';
       document.getElementById('codeDisplay').textContent = code;
       document.getElementById('shareLinkInput').value =
         location.origin + location.pathname + '?join=' + code;
-
       roomRef.on('value', onRoomUpdate);
-
-      // Re-announce presence on reconnect
-      db.ref('.info/connected').on('value', snap => {
-        if (snap.val() && roomRef && myRole === 'X') {
+      db.ref('.info/connected').on('value', s => {
+        if (s.val() && roomRef && myRole==='X') {
           roomRef.child('xOnline').set(true);
           roomRef.child('xOnline').onDisconnect().set(false);
         }
@@ -367,10 +484,7 @@
 
     function joinFromInput() {
       const code = document.getElementById('codeInput').value.trim().toUpperCase();
-      if (code.length !== 6) {
-        document.getElementById('joinError').textContent = 'Code must be 6 characters.';
-        return;
-      }
+      if (code.length !== 6) { document.getElementById('joinError').textContent = 'Code must be 6 characters.'; return; }
       joinGame(code);
     }
 
@@ -378,62 +492,47 @@
       code = code.toUpperCase();
       document.getElementById('choicePanel').style.display = 'none';
       document.getElementById('connectingPanel').style.display = 'flex';
-
       roomRef = db.ref('rooms/' + code);
       let snap;
       try { snap = await roomRef.once('value'); }
-      catch {
-        resetLobby('Connection failed. Check your internet.');
-        return;
-      }
-
+      catch { resetLobby('Connection failed. Check your internet.'); return; }
       if (!snap.exists()) { resetLobby('Room not found. Check the code.'); return; }
-
-      const data = snap.val();
-      if (data.oOnline) { resetLobby('Room is already full.'); return; }
-
+      if (snap.val().oOnline) { resetLobby('Room is already full.'); return; }
       myRole = 'O';
       await roomRef.update({ oOnline: true });
       roomRef.child('oOnline').onDisconnect().set(false);
-
-      db.ref('.info/connected').on('value', snap => {
-        if (snap.val() && roomRef && myRole === 'O') {
+      db.ref('.info/connected').on('value', s => {
+        if (s.val() && roomRef && myRole==='O') {
           roomRef.child('oOnline').set(true);
           roomRef.child('oOnline').onDisconnect().set(false);
         }
       });
-
       enterGame();
       roomRef.on('value', onRoomUpdate);
     }
 
-    function resetLobby(errMsg) {
+    function resetLobby(err) {
       document.getElementById('connectingPanel').style.display = 'none';
       document.getElementById('choicePanel').style.display = 'flex';
-      document.getElementById('joinError').textContent = errMsg;
+      document.getElementById('joinError').textContent = err;
     }
 
     function enterGame() {
       inGame = true;
-      const badge = document.getElementById('roleBadge');
-      badge.textContent = myRole;
-      badge.style.color = myRole === 'X' ? '#e94560' : '#a8dadc';
+      const b = document.getElementById('roleBadge');
+      b.textContent = myRole;
+      b.style.color = myRole === 'X' ? '#0a84ff' : '#ff453a';
       show('gameScreen');
     }
 
-    // ── ROOM LISTENER ─────────────────────────────
     function onRoomUpdate(snap) {
       const data = snap.val();
       if (!data) return;
-
-      // X waits here until O joins
-      if (myRole === 'X' && data.oOnline && !inGame) enterGame();
+      if (myRole==='X' && data.oOnline && !inGame) enterGame();
       if (!inGame) return;
 
       const board = [data.c0,data.c1,data.c2,data.c3,data.c4,data.c5,data.c6,data.c7,data.c8];
       const win   = checkWin(board);
-
-      // Render cells
       cells.forEach((cell, i) => {
         const v = board[i];
         cell.className = 'cell' + (v ? ' taken ' + v.toLowerCase() : '');
@@ -441,100 +540,77 @@
         if (win && win.includes(i)) cell.classList.add('win');
       });
 
-      // Partner disconnected
-      const partnerOnline = myRole === 'X' ? data.oOnline : data.xOnline;
+      if (!(myRole==='X' ? data.xOnline : data.oOnline) && !(myRole==='X' ? data.oOnline : data.xOnline)) {
+        // edge case: both offline somehow
+      }
+      const partnerOnline = myRole==='X' ? data.oOnline : data.xOnline;
       if (!partnerOnline) {
-        setStatus('Partner disconnected.', '#aaa');
+        setStatus('Partner disconnected.', 'rgba(235,235,245,0.4)');
         blockBoard(true);
         document.getElementById('playAgainBtn').style.display = 'none';
         return;
       }
 
-      // Score update (fires once per result change)
       if (data.result && data.result !== lastResult) {
         lastResult = data.result;
-        if (data.result === 'draw') {
-          scores.D++;
-          document.getElementById('scoreD').textContent = scores.D;
-        } else {
-          scores[data.result]++;
-          document.getElementById('score' + data.result).textContent = scores[data.result];
-        }
+        if (data.result==='draw') { scores.D++; document.getElementById('scoreD').textContent = scores.D; }
+        else { scores[data.result]++; document.getElementById('score'+data.result).textContent = scores[data.result]; }
       }
       if (!data.result && lastResult) lastResult = null;
 
-      // Game over state
       if (data.result) {
         const btn = document.getElementById('playAgainBtn');
         btn.style.display = 'block';
-
-        if (data.result === 'draw')      setStatus("It's a draw!", '#a8dadc');
-        else if (data.result === myRole) setStatus('You win! 🎉', '#e94560');
-        else                             setStatus('Partner wins!', '#aaa');
+        if (data.result==='draw')           setStatus("It's a draw.", 'rgba(235,235,245,0.55)');
+        else if (data.result===myRole)      setStatus('You win.', myRole==='X' ? '#0a84ff' : '#ff453a');
+        else                                setStatus('Partner wins.', 'rgba(235,235,245,0.4)');
 
         if (data.restartX && data.restartO) {
-          // Both agreed — X does the reset write
-          if (myRole === 'X') {
-            roomRef.update({
-              c0:'',c1:'',c2:'',c3:'',c4:'',c5:'',c6:'',c7:'',c8:'',
-              turn:'X', result:'', restartX:false, restartO:false
-            });
-          }
-          btn.textContent = 'Play Again';
-          btn.disabled = false;
+          if (myRole==='X') roomRef.update({
+            c0:'',c1:'',c2:'',c3:'',c4:'',c5:'',c6:'',c7:'',c8:'',
+            turn:'X', result:'', restartX:false, restartO:false
+          });
+          btn.textContent = 'Play Again'; btn.disabled = false;
         } else {
-          const myVote = myRole === 'X' ? data.restartX : data.restartO;
+          const myVote = myRole==='X' ? data.restartX : data.restartO;
           btn.textContent = myVote ? 'Waiting for partner…' : 'Play Again';
-          btn.disabled    = !!myVote;
+          btn.disabled = !!myVote;
         }
-
         blockBoard(true);
         return;
       }
 
-      // Active game
       document.getElementById('playAgainBtn').style.display = 'none';
-      if (data.turn === myRole) {
-        setStatus('Your turn!', myRole === 'X' ? '#e94560' : '#a8dadc');
+      if (data.turn===myRole) {
+        setStatus('Your turn', myRole==='X' ? '#0a84ff' : '#ff453a');
         blockBoard(false);
       } else {
-        setStatus("Partner's turn…", '#aaa');
+        setStatus("Partner's turn", 'rgba(235,235,245,0.4)');
         blockBoard(true);
       }
     }
 
-    // ── MOVE ──────────────────────────────────────
     cells.forEach(cell => {
       cell.addEventListener('click', () => {
         if (!inGame || cell.classList.contains('taken') || cell.classList.contains('blocked')) return;
         const i = +cell.dataset.i;
-
-        // Optimistically block board to prevent double-clicks before Firebase confirms
         blockBoard(true);
-
-        const newBoard = Array.from(cells).map((c, j) => j === i ? myRole : (c.textContent || ''));
+        const newBoard = Array.from(cells).map((c,j) => j===i ? myRole : (c.textContent||''));
         const update   = { [`c${i}`]: myRole };
         const win      = checkWin(newBoard);
-
-        if      (win)                  update.result = myRole;
+        if      (win)                     update.result = myRole;
         else if (newBoard.every(Boolean)) update.result = 'draw';
-        else    update.turn = myRole === 'X' ? 'O' : 'X';
-
+        else    update.turn = myRole==='X' ? 'O' : 'X';
         roomRef.update(update);
       });
     });
 
-    // ── RESTART ───────────────────────────────────
     function voteRestart() {
-      roomRef.update({ [myRole === 'X' ? 'restartX' : 'restartO']: true });
+      roomRef.update({ [myRole==='X' ? 'restartX' : 'restartO']: true });
     }
 
-    // ── AUTO-JOIN FROM URL ────────────────────────
     const joinCode = new URLSearchParams(location.search).get('join');
-    if (joinCode) {
-      document.getElementById('codeInput').value = joinCode.toUpperCase();
-      joinGame(joinCode);
-    }
+    if (joinCode) { document.getElementById('codeInput').value = joinCode.toUpperCase(); joinGame(joinCode); }
   </script>
 </body>
 </html>
