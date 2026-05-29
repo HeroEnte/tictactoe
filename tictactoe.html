@@ -18,12 +18,87 @@
       min-height: 100vh;
     }
 
-    h1 {
+    /* ── LOGIN ── */
+    #login {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      background: #16213e;
+      padding: 2.8rem 3rem;
+      border-radius: 18px;
+      box-shadow: 0 0 40px rgba(233,69,96,0.2);
+    }
+
+    #login h1 {
+      font-size: 2rem;
+      color: #e94560;
+      letter-spacing: 2px;
+    }
+
+    #login .love-note {
+      font-size: 0.95rem;
+      color: #a8dadc;
+      font-style: italic;
+    }
+
+    #login input {
+      padding: 0.65rem 1.2rem;
+      font-size: 1rem;
+      border: 2px solid #0f3460;
+      background: #1a1a2e;
+      color: #eee;
+      border-radius: 8px;
+      width: 220px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #login input:focus { border-color: #e94560; }
+
+    #login button {
+      padding: 0.6rem 2rem;
+      font-size: 1rem;
+      border: 2px solid #e94560;
+      background: transparent;
+      color: #e94560;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.15s, color 0.15s;
+      width: 220px;
+    }
+
+    #login button:hover { background: #e94560; color: #fff; }
+
+    #login .error {
+      font-size: 0.88rem;
+      color: #e94560;
+      min-height: 1.2em;
+    }
+
+    /* ── GAME ── */
+    #game { display: none; flex-direction: column; align-items: center; }
+
+    #game h1 {
       font-size: 2.4rem;
       margin-bottom: 0.4rem;
       letter-spacing: 2px;
       color: #e94560;
     }
+
+    #scores {
+      display: flex;
+      gap: 2.5rem;
+      margin-bottom: 1.2rem;
+      font-size: 1rem;
+      color: #aaa;
+    }
+
+    #scores span { font-weight: bold; }
+    #scores .sx { color: #e94560; }
+    #scores .so { color: #a8dadc; }
 
     #status {
       font-size: 1.15rem;
@@ -52,17 +127,12 @@
       user-select: none;
     }
 
-    .cell:hover:not(.taken) {
-      background: #0f3460;
-      transform: scale(1.05);
-    }
-
+    .cell:hover:not(.taken) { background: #0f3460; transform: scale(1.05); }
     .cell.x { color: #e94560; }
     .cell.o { color: #a8dadc; }
-
     .cell.win {
       background: #0f3460;
-      box-shadow: 0 0 18px rgba(233, 69, 96, 0.6);
+      box-shadow: 0 0 18px rgba(233,69,96,0.6);
     }
 
     #restart {
@@ -78,46 +148,72 @@
       transition: background 0.15s, color 0.15s;
     }
 
-    #restart:hover {
-      background: #e94560;
-      color: #fff;
-    }
+    #restart:hover { background: #e94560; color: #fff; }
 
-    #scores {
-      display: flex;
-      gap: 2.5rem;
-      margin-bottom: 1.2rem;
-      font-size: 1rem;
-      color: #aaa;
+    .love-note-game {
+      margin-top: 1.8rem;
+      font-size: 0.9rem;
+      color: #a8dadc;
+      font-style: italic;
+      opacity: 0.7;
     }
-
-    #scores span { font-weight: bold; }
-    #scores .sx { color: #e94560; }
-    #scores .so { color: #a8dadc; }
   </style>
 </head>
 <body>
-  <h1>TIC TAC TOE</h1>
-  <div id="scores">
-    <div>X: <span class="sx" id="scoreX">0</span></div>
-    <div>Draws: <span id="scoreD">0</span></div>
-    <div>O: <span class="so" id="scoreO">0</span></div>
+
+  <!-- LOGIN -->
+  <div id="login">
+    <h1>TIC TAC TOE</h1>
+    <p class="love-note">Ich liebe dich, Alina :)</p>
+    <input type="password" id="pwInput" placeholder="Enter password" autocomplete="off" />
+    <button onclick="tryLogin()">Enter</button>
+    <div class="error" id="loginError"></div>
   </div>
-  <div id="status">Player X's turn</div>
-  <div id="board">
-    <div class="cell" data-i="0"></div>
-    <div class="cell" data-i="1"></div>
-    <div class="cell" data-i="2"></div>
-    <div class="cell" data-i="3"></div>
-    <div class="cell" data-i="4"></div>
-    <div class="cell" data-i="5"></div>
-    <div class="cell" data-i="6"></div>
-    <div class="cell" data-i="7"></div>
-    <div class="cell" data-i="8"></div>
+
+  <!-- GAME -->
+  <div id="game">
+    <h1>TIC TAC TOE</h1>
+    <div id="scores">
+      <div>X: <span class="sx" id="scoreX">0</span></div>
+      <div>Draws: <span id="scoreD">0</span></div>
+      <div>O: <span class="so" id="scoreO">0</span></div>
+    </div>
+    <div id="status">Player X's turn</div>
+    <div id="board">
+      <div class="cell" data-i="0"></div>
+      <div class="cell" data-i="1"></div>
+      <div class="cell" data-i="2"></div>
+      <div class="cell" data-i="3"></div>
+      <div class="cell" data-i="4"></div>
+      <div class="cell" data-i="5"></div>
+      <div class="cell" data-i="6"></div>
+      <div class="cell" data-i="7"></div>
+      <div class="cell" data-i="8"></div>
+    </div>
+    <button id="restart">Restart</button>
+    <p class="love-note-game">Ich liebe dich, Alina :)</p>
   </div>
-  <button id="restart">Restart</button>
 
   <script>
+    // ── LOGIN ──
+    function tryLogin() {
+      const val = document.getElementById('pwInput').value;
+      if (val === 'Alina') {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('game').style.display = 'flex';
+        init();
+      } else {
+        document.getElementById('loginError').textContent = 'Wrong password. Try again!';
+        document.getElementById('pwInput').value = '';
+        document.getElementById('pwInput').focus();
+      }
+    }
+
+    document.getElementById('pwInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') tryLogin();
+    });
+
+    // ── GAME ──
     const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
     let board, current, over, scores = {X:0, O:0, D:0};
 
@@ -172,8 +268,6 @@
     });
 
     document.getElementById('restart').addEventListener('click', init);
-
-    init();
   </script>
 </body>
 </html>
